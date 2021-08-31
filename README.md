@@ -7,7 +7,7 @@ It supports python 3.7 +
 pip install volt
 ```
 
-## Structure
+## Planned Structure (Can be changed!)
 ### Event listener
 ```python
 from volt import Client, Intents, Message
