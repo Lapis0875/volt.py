@@ -1,10 +1,10 @@
 # Volt
 **Volt** is yet another discord api wrapper for Python.
-It supports python 3.7 +
+It supports python 3.8 +
 
-## How to install
+## How to install [Currently Not Supported.]
 ```shell
-pip install volt
+pip install volt.py
 ```
 
 ## Planned Structure (Can be changed!)
