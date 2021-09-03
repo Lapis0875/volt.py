@@ -6,6 +6,27 @@ It supports python 3.8 +
 ```shell
 pip install volt.py
 ```
+### Speed up volt.py!
+You can install extra dependencies for speeding up library.
+```shell
+pip install volt.py[speed]
+```
+`speed` extra requirements are used to speed up library.
+This contains `uvloop` for asyncio event loop speedup.
+Since uvloop is not supported on Windows platform, you can't use this extra requirements on Windows.
+You can use wsl to use speedups on Windows!
+
+### Voice feature with volt.py [Currently Not Supported]
+You can install dependencies required for voice features.
+```shell
+pip install volt.py[voice]
+```
+
+### I want all extra requirements to be installed!
+You can install all extra dependencies by using following command;
+```shell
+pip install volt.py[all]
+```
 
 ## Planned Structure (Can be changed!)
 ### Event listener
@@ -22,7 +43,7 @@ async def on_message(msg: Message):
 
 client.run('BOT_TOKEN')
 ```
-### Slash Commands
+### Interaction
 ```python
 from volt import Client, Intents, interaction, User
 
