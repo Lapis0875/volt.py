@@ -1,4 +1,4 @@
-from typing import Generator, TypeVar, Iterator, Protocol
+from typing import Generator, TypeVar, Iterator, Sized, Tuple
 from copy import deepcopy
 
 T = TypeVar('T')
@@ -11,8 +11,11 @@ __all__ = (
 )
 
 
-class SizedIter(Protocol):
+class SizedIter(Iterator, Sized):
     def __iter__(self) -> Iterator:
+        pass
+
+    def __next__(self):
         pass
 
     def __len__(self) -> int:
@@ -28,7 +31,7 @@ def ilen(iterable: SizedIter[T]) -> int:
     return len(deepcopy(iterable))
 
 
-def chunk(iterable: SizedIter[T], size: int) -> Generator[tuple[int, int, SizedIter[T]]]:
+def chunk(iterable: SizedIter[T], size: int) -> Generator[SizedIter[T], Tuple[int, int, SizedIter[T]], None]:
     """
     주어진 sequence 객체를 주어진 크기로 쪼개 반환합니다.
     :param iterable: 쪼갤 반복자(Iterable) 입니다.

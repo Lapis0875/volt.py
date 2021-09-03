@@ -1,11 +1,34 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
-from typing import NamedTuple, Optional, Final, List
+from typing import Optional, Final, List, Union, Dict
+from plum import dispatch
 
 from .abc import JsonObject
 from .color import Color
 from .types.type_hint import JSON
+
+
+__all__ = (
+    'Embed',
+    'EmbedType',
+    'EmbedImage',
+    'EmbedVideo',
+    'EmbedAuthor',
+    'EmbedFooter',
+    'EmbedProvider',
+    'EmbedField',
+    'TITLE_LIMIT',
+    'DESCRIPTION_LIMIT',
+    'AUTHOR_NAME_LIMIT',
+    'FOOTER_TEXT_LIMIT',
+    'FIELDS_LIMIT',
+    'FIELD_NAME_LIMIT',
+    'FIELD_VALUE_LIMIT'
+)
+
+
+EMBED_DICT_TYPE = Dict[str, Union[str, bool]]
 
 
 # Embed Limits
@@ -19,7 +42,6 @@ AUTHOR_NAME_LIMIT: Final[int] = 256
 
 
 class EmbedType(Enum):
-    @staticmethod
     def _generate_next_value_(name: str, start, count, last_values):
         return name.lower()
 
@@ -29,14 +51,6 @@ class EmbedType(Enum):
     GIFV = auto()
     Article = auto()
     Link = auto()
-
-    @classmethod
-    def from_value(cls, value: str) -> 'EmbedType':
-        m = next(filter(lambda m: m.value == value, cls.__members__.values()), None)
-        if m:
-            return m
-        else:
-            raise ValueError(f'Embed Type with value {value} does not exist!')
 
 
 @dataclass(init=True, eq=True, repr=True)
@@ -65,10 +79,10 @@ class EmbedImage(JsonObject):
 
 @dataclass(init=True, eq=True, repr=True)
 class EmbedVideo(JsonObject):
-    url: Optional[str]      # source url of video
+    url: Optional[str]          # source url of video
     proxy_url: Optional[str]    # a proxied url of the video
-    height: Optional[int]   # height of video
-    width: Optional[int]    # width of video
+    height: Optional[int]       # height of video
+    width: Optional[int]        # width of video
 
     @classmethod
     def from_json(cls, data: JSON) -> 'EmbedVideo':
@@ -222,16 +236,29 @@ class Embed(JsonObject):
     def from_json(cls, data: JSON) -> 'JsonObject':
         return cls(
             data.get('title'),
-            EmbedType.from_value(data['title']) if 'title' in data else None,
+            EmbedType(data['title']) if 'title' in data else None,
             data.get('description'),
+            data.get('url'),
+            datetime.fromisoformat(data.get('timestamp')),
+            Color(data.get('color'))
 
         )
 
     def __init__(
             self,
-            title: Optional[str],
-            type: Optional[EmbedType],
-            description: Optional[str],
+            title: Optional[str] = None,
+            type: Optional[EmbedType] = None,
+            description: Optional[str] = None,
+            url: Optional[str] = None,
+            timestamp: Optional[datetime] = None,
+            color: Optional[Color] = None,
+            footer: Optional[EmbedFooter] = None,
+            image: Optional[EmbedImage] = None,
+            thumbnail: Optional[EmbedImage] = None,
+            video: Optional[EmbedVideo] = None,
+            provider: Optional[EmbedProvider] = None,
+            author: Optional[EmbedAuthor] = None,
+            fields: Optional[List[EmbedField]] = None
     ):
         if length := len(title) > TITLE_LIMIT:
             raise ValueError(f'Embed.title can have up to {TITLE_LIMIT} characters, but you have {length} characters!')
@@ -240,7 +267,16 @@ class Embed(JsonObject):
         if length := len(description) > DESCRIPTION_LIMIT:
             raise ValueError(f'Embed.description can have up to {DESCRIPTION_LIMIT} characters, but you have {length} characters!')
         self.description = description
-        # TODO : Fill __init__
+        self.url = url
+        self.timestamp = timestamp
+        self.color = color
+        self.footer = footer
+        self.image = image
+        self.thumbnail = thumbnail
+        self.video = video
+        self.provider = provider
+        self.author = author
+        self.fields = fields
 
     def to_json(self) -> JSON:
         data = {}
@@ -271,4 +307,40 @@ class Embed(JsonObject):
         if self.fields:
             data.update(fields=list(map(lambda f: f.to_json(), self.fields)))
         return data
+
+    @dispatch
+    def add_field(self, field: EmbedField):
+        if self.fields is None:
+            self.fields = []
+        self.fields.append(field)
+
+    @dispatch
+    def add_field(self, field: EMBED_DICT_TYPE):
+        if self.fields is None:
+            self.fields = []
+        self.fields.append(EmbedField(**field))
+
+    @dispatch
+    def add_field(self, name: str, value: str, inline: Optional[bool] = None):
+        if self.fields is None:
+            self.fields = []
+        self.fields.append(EmbedField(name, value, inline))
+
+    def remove_field_at(self, index: int):
+        if self.fields:
+            self.fields.pop(index)
+
+    @dispatch
+    def remove_field(self, field: EmbedField):
+        if self.fields:
+            self.fields.remove(field)
+
+    @dispatch
+    def remove_field(self, field: EMBED_DICT_TYPE):
+        if self.fields:
+            self.fields.remove(EmbedField(**field))
+
+    def insert_field(self, field: EmbedField, index: int = None):
+        index = index or len(self.fields)
+        self.fields.insert(index, field)
 

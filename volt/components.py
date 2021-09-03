@@ -8,7 +8,7 @@ from .abc import SingletonMeta, JsonObject, Subscribable
 from .emoji import Emoji
 from .errors import NestedActionRowNotAllowed
 from .types.type_hint import JSON, CoroutineFunction
-from .utils.log import get_stream_logger
+from .utils.log import get_logger
 
 # Constant Values - key
 TYPE: Final[str] = 'type'
@@ -25,7 +25,7 @@ __all__ = (
     'ComponentCache'
 )
 
-logger = get_stream_logger('volt.ui')
+logger = get_logger('volt.ui')
 
 
 """

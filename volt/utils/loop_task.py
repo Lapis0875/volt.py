@@ -1,8 +1,9 @@
 import asyncio
+import collections
+import typing
 from datetime import timedelta, time, timezone, datetime
-from typing import Optional, Coroutine, Type
-from src.utils.type_hint import CoroutineFunction
-from src.utils.dtutil import utcnow, is_leap_year
+from ..types.type_hint import CoroutineFunction, AnyNumber, Decorator
+from .dtutil import utcnow, is_leap_year
 
 
 class ZeroSecondsTaskNotSupported(Exception):
@@ -27,7 +28,7 @@ class LoopTask:
         '_after_hook'
     )
 
-    def __init__(self, coro: CoroutineFunction, args, kwargs, days: int, hours: int, minutes: int, seconds: int):
+    def __init__(self, coro: CoroutineFunction, args, kwargs, days: int, hours: int, minutes: int, seconds: AnyNumber):
         try:
             self.loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -36,7 +37,7 @@ class LoopTask:
         self._callback = coro
         self._args = args
         self._kwargs = kwargs or {}     # You can use keyword-arguments dictionary as namespace to pass on callback functions (before&after invoke, callback)
-        self._ignored_exceptions: list[Type[Exception]] = []
+        self._ignored_exceptions: typing.List[typing.Type[Exception]] = []
         self._task = None
 
         # Looping delay info
@@ -51,8 +52,8 @@ class LoopTask:
         self._running: bool = False
 
         # Hook coroutine functions.
-        self._before_hook: Optional[CoroutineFunction] = None
-        self._after_hook: Optional[CoroutineFunction] = None
+        self._before_hook: typing.Optional[CoroutineFunction] = None
+        self._after_hook: typing.Optional[CoroutineFunction] = None
 
     @property
     def total_delay(self) -> timedelta:
@@ -62,13 +63,29 @@ class LoopTask:
     def is_running(self) -> bool:
         return self._running
 
-    def __call__(self, *args, **kwargs) -> Coroutine:
+    @property
+    def args(self) -> typing.Tuple:
+        return self._args
+
+    @args.setter
+    def args(self, new: typing.Tuple):
+        self._args = new
+
+    @property
+    def kwargs(self) -> typing.Mapping[str, typing.Any]:
+        return self._kwargs     # Maybe we need to freeze kwargs dict to control dictionary mutation.
+
+    @kwargs.setter
+    def kwargs(self, new: typing.Mapping[str, typing.Any]):
+        self._kwargs = new
+
+    def __call__(self, *args, **kwargs) -> typing.Coroutine:
         """
         Call callback coroutine function without any hooks.
         :param args:
         :param kwargs:
         """
-        return self._callback(*args, **kwargs)
+        return self._callback(*self._args, **self._kwargs)
 
     def before_invoke(self, coro: CoroutineFunction):
         if not asyncio.iscoroutinefunction(coro):
@@ -80,7 +97,7 @@ class LoopTask:
             raise TypeError(f'LoopTask.after_invoke must be coroutine function, not {type(coro)}.')
         self._after_hook = coro
 
-    async def _handle_exceptions(self, exc_type: Type[Exception], exc_value: Exception, traceback):
+    async def _handle_exceptions(self, exc_type: typing.Type[Exception], exc_value: Exception, traceback):
         """
         Default exception handler. Can be replaced by `@LoopTask.handle_exception` decorator.
         :param exc_type: Exception type.
@@ -108,9 +125,15 @@ class LoopTask:
 
     def start(self, *args, **kwargs):
         if args:
-            self._args = args
+            if self._args is not None:
+                self._args += args
+            else:
+                self._args = args
         if kwargs:
-            self._kwargs = kwargs
+            if self._kwargs is not None:
+                self._kwargs.update(kwargs)
+            else:
+                self._kwargs = kwargs
         self._running = True
         self._task = self.loop.create_task(self._run(), name=f'LoopTask.run(id={id(self)})')
         return self._task
@@ -119,8 +142,8 @@ class LoopTask:
         self._running = False
 
 
-def loop(days: int = 0, hours: int = 0, minutes: int = 0, seconds: int = 0):
-    def wrapper(coro: CoroutineFunction):
+def loop(days: int = 0, hours: int = 0, minutes: int = 0, seconds: AnyNumber = 0) -> typing.Callable[[CoroutineFunction], LoopTask]:
+    def wrapper(coro: CoroutineFunction) -> LoopTask:
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('YoutubeEventLoop.LoopTask.callback must be coroutine function.')
         if not any((days, hours, minutes, seconds)):
@@ -163,8 +186,8 @@ class CronLikeTask(LoopTask):
         return start_dt - utcnow()
 
 
-def cron(hour: int, minute: int, second: int):
-    def wrapper(coro: CoroutineFunction):
+def cron(hour: int, minute: int, second: AnyNumber) -> Decorator:
+    def wrapper(coro: CoroutineFunction) -> CronLikeTask:
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('YoutubeEventLoop.LoopTask.callback must be coroutine function.')
         if not any((hour, minute, second)):

@@ -11,8 +11,7 @@ with __import__('volt.__init__.py') as module_info:
 
 extra_requires = {
     'voice': [],
-    'docs': ['autogitbook'],
-    'speed': []
+    'speed': ['uvloop']
 }
 
 packages = [

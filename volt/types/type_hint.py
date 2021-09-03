@@ -1,17 +1,23 @@
 from typing import Dict, Union, Callable, Coroutine, Protocol, Any, Literal
 
 __all__ = (
+    'AnyNumber',
     'JSON',
     'Function',
     'CoroutineFunction',
     'AnyFunction',
-    'JsonCompatObject'
+    'Decorator',
+    'JsonCompatObject',
+    'RestMethod',
+    'FileMode'
 )
 
+AnyNumber = Union[int, float]
 JSON = Dict[str, Union[str, int, float, bool, list, dict, None]]
 Function = Callable[..., Any]
 CoroutineFunction = Callable[..., Coroutine]
 AnyFunction = Union[Function, CoroutineFunction]
+Decorator = Callable[[AnyFunction], Any]
 
 RestMethod = Literal['GET', 'POST', 'PATCH', 'DELETE']
 FileMode = Literal[
