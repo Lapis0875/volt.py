@@ -3,3 +3,4 @@ venv
 test
 dist
 build
+tests
