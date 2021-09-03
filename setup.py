@@ -11,7 +11,8 @@ with __import__('volt.__init__.py') as module_info:
 
 extra_requires = {
     'voice': [],
-    'speed': ['uvloop']
+    'speed': ['uvloop'],
+    'all': ['uvloop']
 }
 
 packages = [
