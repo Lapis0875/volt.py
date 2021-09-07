@@ -33,9 +33,9 @@ def ilen(iterable: SizedIter[T]) -> int:
 
 def chunk(iterable: SizedIter[T], size: int) -> Generator[SizedIter[T], Tuple[int, int, SizedIter[T]], None]:
     """
-    주어진 sequence 객체를 주어진 크기로 쪼개 반환합니다.
-    :param iterable: 쪼갤 반복자(Iterable) 입니다.
-    :param size: 짜를 크기입니다.
+    Chunk iterator of given sequence based on size parameter.
+    :param iterable: Iterable object to chunk.
+    :param size: Size to chunk.
     """
     for chunk_index, i in enumerate(range(0, len(iterable), size)):
         chunked = iterable[i:i + size]
