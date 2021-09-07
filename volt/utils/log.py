@@ -22,6 +22,10 @@ def get_logger(name: str, stream: bool = True, stream_level: int = logging.INFO,
     logger: logging.Logger = logging.getLogger(name)
     logger.setLevel(stream_level)
 
+    if p := logger.parent:
+        if len(p.handlers):
+            return logger
+
     fmt = logging.Formatter(
         style='{',
         fmt='[{asctime}] [{levelname}] {name}: {message}'
